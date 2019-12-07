@@ -33,6 +33,8 @@ chapter2/ftoc/ftoc
 chapter2/popcount/popcount
 chapter2/tempconv/tempconv
 chapter2/tempconv0/tempconv0
+chapter3/basename/basename
+chapter3/comma/comma
 chapter3/exercise3_1/exercise3_1
 chapter3/exercise3_2/exercise3_2
 chapter3/exercise3_3/exercise3_3
@@ -42,5 +44,8 @@ chapter3/exercise3_6/exercise3_6
 chapter3/exercise3_7/exercise3_7
 chapter3/exercise3_8/exercise3_8
 chapter3/exercise3_9/exercise3_9
+chapter3/exercise3_9/exercise3_10
+chapter3/exercise3_9/exercise3_11
+chapter3/exercise3_9/exercise3_12
 chapter3/mandelbrot/mandelbrot
 chapter3/surface/surface
