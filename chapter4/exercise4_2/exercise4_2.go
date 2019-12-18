@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 )
 
 const (
@@ -37,15 +36,9 @@ func handleFlags() (*string, error) {
 	size := flag.String("size", SHA256, "Select SHA size: 256, 384 or 512")
 	flag.Parse()
 	if *size != SHA256 && *size != SHA384 && *size != SHA512 {
-		return nil, fmt.Errorf("Wrong argument type: %v\n", *size)
+		return nil, fmt.Errorf("Wrong flag: %v\n", *size)
 	}
 	return size, nil
-}
-
-func getInput() (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	s, err := reader.ReadString('\n')
-	return strings.TrimRight(s, "\n"), err
 }
 
 func main() {
@@ -53,9 +46,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	input, err := getInput()
-	if err != nil {
-		log.Fatal(err)
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		fmt.Println(generateHash(scanner.Text(), *size))
 	}
-	fmt.Println(generateHash(input, *size))
 }
