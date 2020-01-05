@@ -12,9 +12,24 @@ import (
 )
 
 const (
-    FirstIssueNumber = 1
-	LatestIssueNumber     = 2244
-	UrlFormatString = "https://xkcd.com/%v/info.0.json"
+	FirstIssueNumber  = 1
+	LatestIssueNumber = 2244
+	UrlFormatString   = "https://xkcd.com/%v/info.0.json"
+	Usage             = `
+Usage: xkcd [OPTIONS] COMMAND
+
+Downloads and queries an index of xkcd comics
+
+Options:
+-index string
+        filename of the index (default "index.json")
+
+Commands:
+download    creates an offline index with all xkcd comics
+query       searches for a comic with the search term
+
+Run 'xkcd COMMAND --help' for more information on a command.
+`
 )
 
 type Comic struct {
@@ -53,7 +68,9 @@ func downloadAllXkcd(filename string) error {
 		return err
 	}
 	defer file.Close()
-	if err := json.NewEncoder(file).Encode(&comics); err != nil {
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "    ")
+	if err := encoder.Encode(&comics); err != nil {
 		log.Fatal(err)
 	}
 	return nil
@@ -70,7 +87,7 @@ func findComic(match, filename string) (Comic, error) {
 		return Comic{}, err
 	}
 	for _, comic := range comics {
-		if strings.Contains(comic.Title, match) {
+		if strings.Contains(comic.Title, match) || strings.Contains(comic.Title, strings.ToUpper(match)) || strings.Contains(comic.Title, strings.ToLower(match)) {
 			return comic, nil
 		}
 	}
@@ -78,6 +95,9 @@ func findComic(match, filename string) (Comic, error) {
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, Usage)
+	}
 	// General flag
 	filenameFlag := flag.String("index", "index.json", "filename of the index")
 
@@ -93,7 +113,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	switch os.Args[1] {
+	var subcommand string
+	if os.Args[1] == "-index" && len(os.Args) > 3 {
+		subcommand = os.Args[3]
+	} else {
+		subcommand = os.Args[1]
+	}
+
+	switch subcommand {
 	case "download":
 		downloadSubcommand.Parse(os.Args[2:])
 	case "query":
@@ -103,11 +130,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	flag.Parse()
+
 	if downloadSubcommand.Parsed() {
 		if err := downloadAllXkcd(*filenameFlag); err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("\nSuccessfully downloaded all comics and saved them into %v index file\n", *filenameFlag)
+		fmt.Printf("\rSuccessfully downloaded all comics and saved them into %q index file\n", *filenameFlag)
 	} else {
 		fmt.Printf("Searching comic with match string: %q in its title\n", *matchFlag)
 		comic, err := findComic(*matchFlag, *filenameFlag)
