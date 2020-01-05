@@ -60,7 +60,12 @@ func SearchIssues(terms []string) (*IssuesSearchResult, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
-	link := resp.Header["Link"][0] // Contains the link to the next page and last page
+	linkValue, ok := resp.Header["Link"]
+	// If there's only a single page of result then we can return from function immediately
+	if !ok {
+		return &result, nil
+	}
+	link := linkValue[0] // Contains the link to the next page and last page
 	reg := regexp.MustCompile(Regex)
 	submatches := reg.FindAllStringSubmatch(link, -1)
 	lastPage := submatches[1][1] // Get only the last page
