@@ -44,7 +44,6 @@ func startElement(n *html.Node) {
 			fmt.Printf("%*s<%s>", depth*2, "", n.Data)
 		}
 		depth++
-
 		if !(n.FirstChild != nil && n.FirstChild.Type == html.TextNode && strings.TrimSpace(n.FirstChild.Data) != "") {
 			fmt.Println()
 		}
