@@ -101,6 +101,7 @@ chapter5/exercise5_6/exercise5_6
 chapter5/exercise5_7/exercise5_7
 chapter5/exercise5_8/exercise5_8
 chapter5/exercise5_9/exercise5_9
+chapter5/exercise5_10/exercise5_10
 
 chapter5/findlinks1/fetch
 chapter5/findlinks1/findlinks1
@@ -109,4 +110,7 @@ chapter5/outline/fetch
 chapter5/outline/outline
 chapter5/outline2/outline2
 chapter5/outline2/*.html
+chapter5/toposort/toposort
+chapter5/squares/squares
+chapter5/findlinks3/findlinks3
 
