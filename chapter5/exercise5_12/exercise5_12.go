@@ -11,40 +11,26 @@ import (
 	"os"
 )
 
-func forEachNode(n *html.Node, pre, post func(depth *int, n *html.Node)) {
-	forEachNodeRec(0, n, pre, post)
+func forEachNode(n *html.Node) {
+	forEachNodeRec(0, n)
 }
 
-func forEachNodeRec(depth int, n *html.Node, pre, post func(depth *int, n *html.Node)) {
-	if pre != nil {
-		pre(&depth, n)
-	}
+func forEachNodeRec(depth int, n *html.Node) {
+	func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			fmt.Printf("%*s<%s>\n", depth*2, "", n.Data)
+			depth++
+		}
+	}(n)
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		forEachNodeRec(depth, c, pre, post)
+		forEachNodeRec(depth, c)
 	}
-	if post != nil {
-		post(&depth, n)
-	}
-}
-
-func startElement(depth *int, n *html.Node) {
-	f := func(n *html.Node) {
+	func(n *html.Node) {
 		if n.Type == html.ElementNode {
-			fmt.Printf("%*s<%s>\n", *depth*2, "", n.Data)
-			*depth++
+			depth--
+			fmt.Printf("%*s</%s>\n", depth*2, "", n.Data)
 		}
-	}
-	f(n)
-}
-
-func endElement(depth *int, n *html.Node) {
-	f := func(n *html.Node) {
-		if n.Type == html.ElementNode {
-			*depth--
-			fmt.Printf("%*s</%s>\n", *depth*2, "", n.Data)
-		}
-	}
-	f(n)
+	}(n)
 }
 
 func main() {
@@ -52,5 +38,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	forEachNode(node, startElement, endElement)
+	forEachNode(node)
 }
