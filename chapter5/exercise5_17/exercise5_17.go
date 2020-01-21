@@ -43,7 +43,11 @@ func ElementsByTagName(doc *html.Node, name ...string) []*html.Node {
 func getNodesStringRepr(nodes []*html.Node) []string {
 	var results []string
 	for _, node := range nodes {
-		results = append(results, fmt.Sprintf("%+v\n", node))
+		if node.FirstChild != nil {
+			results = append(results, fmt.Sprintf("%v: %+v\n", node.Data, node.FirstChild.Data))
+		} else {
+			results = append(results, fmt.Sprintf("%v: %+v\n", node.Data, node.Attr))
+		}
 	}
 	return results
 }
