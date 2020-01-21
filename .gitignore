@@ -118,6 +118,8 @@ chapter5/title2/title2
 chapter5/trace/trace
 chapter5/fetch/fetch
 chapter5/fetch/*.html
+chapter5/exercise5_18/exercise5_18
+chapter5/exercise5_18/*.html
 
 chapter5/findlinks1/fetch
 chapter5/findlinks1/findlinks1
