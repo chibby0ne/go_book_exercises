@@ -150,12 +150,12 @@ func (x byLength) Less(i, j int) bool { return x[i].Length < x[j].Length }
 func (x byLength) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 func printTracks(tracks []*Track) {
-	const format = "%v\t%v\t%v\t%v\t%v\t%v\t\n"
+	const format = "%v\t%v\t%v\t%v\t%v\t\n"
 	tw := new(tabwriter.Writer).Init(os.Stdout, 0, 8, 2, ' ', 0)
-	fmt.Fprintf(tw, format, "Title", "Artist", "Album", "Year", "Length", "Address")
-	fmt.Fprintf(tw, format, "-----", "-----", "-----", "-----", "------", "--------")
+	fmt.Fprintf(tw, format, "Title", "Artist", "Album", "Year", "Length")
+	fmt.Fprintf(tw, format, "-----", "-----", "-----", "-----", "------")
 	for _, t := range tracks {
-		fmt.Fprintf(tw, format, t.Title, t.Artist, t.Album, t.Year, t.Length, &t)
+		fmt.Fprintf(tw, format, t.Title, t.Artist, t.Album, t.Year, t.Length)
 	}
 	tw.Flush()
 }
@@ -170,28 +170,26 @@ func copyTracks(dst, src *[]*Track) {
 func main() {
 	var oldTracks []*Track
 	copyTracks(&oldTracks, &tracks)
-	fmt.Printf("Old tracks\n")
-	printTracks(oldTracks)
 
 	fmt.Printf("\n\nUnsorted\n")
 	printTracks(tracks)
 
-	fmt.Printf("\n\nSorted by Length\n")
+	fmt.Printf("\n\nSorted by Length and Album\n")
 	sort.Sort(&MultiTierSort{tracks, []TrackComparator{LessLength, LessAlbum}})
 	printTracks(tracks)
 
-	fmt.Printf("\n\nSorted by Length using sort stable\n")
+	fmt.Printf("\n\nSorted by Length and Album using sort stable\n")
 	tracks = nil
 	copyTracks(&tracks, &oldTracks)
-	sort.Stable(byLength(tracks))
 	sort.Stable(byAlbum(oldTracks))
+	sort.Stable(byLength(tracks))
 	printTracks(tracks)
 
-	fmt.Printf("\n\nSorted by Length using sort unstable\n")
+	fmt.Printf("\n\nSorted by Length and Album using sort unstable\n")
 	tracks = nil
 	copyTracks(&tracks, &oldTracks)
-	sort.Sort(byLength(tracks))
 	sort.Sort(byAlbum(tracks))
+	sort.Sort(byLength(tracks))
 	printTracks(tracks)
 
 }
