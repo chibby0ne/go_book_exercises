@@ -70,6 +70,9 @@ type FtpConnection struct {
 
 	// Current user
 	CurrentUser string
+
+	// Binary type representation. Affects how files are copied
+	Binary bool
 }
 
 func (f *FtpConnection) convertPortArgumentsToAddress(arg string) (string, string) {
@@ -106,8 +109,8 @@ type reply struct {
 }
 
 var (
-	FileStatusOKReply              = reply{150, "File status okay; about to open data connection."}
 	DataConnectionAlreadyOpenReply = reply{125, "Data connection already open; transfer starting"}
+	FileStatusOKReply              = reply{150, "File status okay; about to open data connection."}
 
 	CommandOKReply                       = reply{200, "Command okay"}
 	AwaitingInputReply                   = reply{220, "Service ready for new user"} // used for greeting
@@ -132,6 +135,7 @@ var (
 )
 
 func (f *FtpConnection) reply(r reply) {
+	log.LogfVerbose("reply: sending %v", r)
 	fmt.Fprintf(f.ControlConnnection, "%s", r)
 }
 
@@ -212,6 +216,7 @@ func (f *FtpConnection) user(args []string) {
 		return
 	}
 	f.CurrentUser = args[0]
+	log.LogfVerbose("user: logged in as :%v", args[0])
 	f.reply(UserLoggedInReply)
 }
 
@@ -220,6 +225,7 @@ func (f *FtpConnection) user(args []string) {
 // entered commands. It specifies no action other than that the
 // server send an OK reply.
 func (f *FtpConnection) noop(args []string) {
+	log.LogfVerbose("noop: nothing to be done")
 	f.reply(CommandOKReply)
 }
 
@@ -262,6 +268,7 @@ func (f *FtpConnection) port(args []string) {
 	address, port := f.convertPortArgumentsToAddress(args[0])
 	f.DataHostClient = address
 	f.DataPortClient = port
+	log.LogfVerbose("port: using %v:%v", address, port)
 	f.reply(CommandOKReply)
 }
 
@@ -290,9 +297,18 @@ func (f *FtpConnection) port(args []string) {
 //   argument is changed, Format then returns to the Non-print
 //   default.
 func (f *FtpConnection) typ(args []string) {
-	if len(args) == 0 || len(args) == 2 && strings.ToUpper(args[0]) == "I" {
+	if len(args) == 0 || len(args) == 1 && strings.ToUpper(args[0]) != "I" || len(args) == 2 && strings.ToUpper(args[0]) == "I" {
 		f.reply(SyntaxErrorInArgumentsReply)
 		log.LogfVerbose("wrong number of arguments supplied: %v", args)
+		return
+	}
+	log.LogfVerbose("type: args: %v", args)
+	if args[0] == "A" && args[1] == "N" {
+		f.Binary = false
+	} else if args[0] == "I" || args[0] == "L" && args[1] == "8" {
+		f.Binary = true
+	} else {
+		f.reply(CommandNotImplementedForParameterReply)
 		return
 	}
 	f.reply(CommandOKReply)
@@ -315,8 +331,10 @@ func (f *FtpConnection) stru(args []string) {
 	}
 	if args[0] == "F" {
 		// Just implements default which is File
+		log.LogfVerbose("stru: file structure")
 		f.reply(CommandOKReply)
 	} else {
+		log.LogfVerbose("stru: not implemented for: %v", args)
 		f.reply(CommandNotImplementedForParameterReply)
 	}
 }
@@ -340,7 +358,12 @@ func (f *FtpConnection) mode(args []string) {
 		return
 	}
 	// Just implements default which is Stream
-	f.reply(CommandOKReply)
+	if strings.ToUpper(args[0]) == "S" {
+		log.LogfVerbose("mode: using stream")
+		f.reply(CommandOKReply)
+	} else {
+		f.reply(CommandNotImplementedForParameterReply)
+	}
 }
 
 // RETRIEVE (RETR)
@@ -351,36 +374,39 @@ func (f *FtpConnection) mode(args []string) {
 func (f *FtpConnection) retr(args []string) {
 	if len(args) != 1 {
 		f.reply(SyntaxErrorInArgumentsReply)
-		log.LogfVerbose("wrong number of arguments supplied: %v", args)
+		log.LogfVerbose("retr: wrong number of arguments supplied: %v", args)
 		return
 	}
 	if _, err := os.Stat(args[0]); os.IsNotExist(err) {
-		log.LogfVerbose("File: %v does not exist", args[0])
+		log.LogfVerbose("retr: File: %v does not exist", args[0])
 		f.reply(RequestFileNotTakenReply)
 		return
 	}
 	file, err := os.Open(args[0])
 	if err != nil {
-		log.LogfVerbose("error opening file: %v", err)
+		log.LogfVerbose("retr: error opening file: %v", err)
 		f.reply(RequestFileNotTakenReply)
 		return
 	}
+	log.LogfVerbose("retr: opened file: %v", file.Name())
 	f.reply(FileStatusOKReply)
 	conn, err := f.openDataConnection()
-	defer conn.Close()
 	if err != nil {
-		log.LogfVerbose("cannot open data connection: %s", err)
+		log.LogfVerbose("retr: cannot open data connection: %s", err)
 		f.reply(CannotOpenDataConnectionReply)
 		return
 	}
-	f.reply(DataConnectionAlreadyOpenReply)
-	bufferConn := bufio.NewWriter(conn)
-	_, err = bufferConn.ReadFrom(file)
+	defer conn.Close()
+	_, err = io.Copy(conn, file)
+	// bufferConn := bufio.NewWriter(conn)
+	// _, err = bufferConn.ReadFrom(file)
 	if err != nil {
-		log.LogfVerbose("Could not complete transfer of file: %s", err)
+		log.LogfVerbose("retr: Could not complete transfer of file: %s", err)
 		f.reply(RequestActionAbortedReply)
 	}
+	log.LogfVerbose("retr: Copied file")
 	f.reply(ClosingDataConnection)
+	log.LogfVerbose("retr: Closing data connection")
 }
 
 // STORE (STOR)
@@ -394,42 +420,45 @@ func (f *FtpConnection) retr(args []string) {
 func (f *FtpConnection) stor(args []string) {
 	if len(args) != 1 {
 		f.reply(SyntaxErrorInArgumentsReply)
-		log.LogfVerbose("wrong number of arguments supplied: %v", args)
+		log.LogfVerbose("stor: wrong number of arguments supplied: %v", args)
 		return
 	}
+	log.LogfVerbose("stor: about to stor with args: %+v", args)
 	dir, base := filepath.Dir(args[0]), filepath.Base(args[0])
+	log.LogfVerbose("dir: %v, base: %v", dir, base)
 	if err := os.MkdirAll(dir, os.ModeDir); err != nil {
 		if errors.As(err, os.ErrPermission) {
-			log.LogfVerbose("Could not create directories due to permission error: %s")
+			log.LogfVerbose("stor: Could not create directories due to permission error: %s")
 		} else {
-			log.LogfVerbose("Could not create directories")
+			log.LogfVerbose("stor: Could not create directories")
 		}
 		f.reply(RequestFileNotTakenReply)
 		return
 	}
-
+	log.LogfVerbose("stor: created directory")
 	file, err := os.Create(filepath.Join(dir, base))
 	if err != nil {
-		log.LogfVerbose("error opening file: %v", err)
+		log.LogfVerbose("stor: error opening file: %v", err)
 		f.reply(RequestFileNotTakenReply)
 		return
 	}
+	log.LogfVerbose("stor: created file: %v", file.Name())
 	f.reply(FileStatusOKReply)
 	conn, err := f.openDataConnection()
-	defer conn.Close()
 	if err != nil {
-		log.LogfVerbose("cannot open data connection: %s", err)
+		log.LogfVerbose("stor: cannot open data connection: %s", err)
 		f.reply(CannotOpenDataConnectionReply)
 		return
 	}
-	f.reply(DataConnectionAlreadyOpenReply)
+	defer conn.Close()
 	_, err = io.Copy(file, conn)
 	if err != nil {
-		log.LogfVerbose("Could not complete transfer of file: %s", err)
+		log.LogfVerbose("stor: Could not complete transfer of file: %s", err)
 		f.reply(RequestActionAbortedReply)
 	}
-
+	log.LogfVerbose("stor: Copied file")
 	f.reply(ClosingDataConnection)
+	log.LogfVerbose("stor: Closing data connection")
 }
 
 // SYSTEM (SYST)
@@ -445,6 +474,7 @@ func (f *FtpConnection) syst(args []string) {
 		return
 	}
 	// In our case, it's only UNIX
+	log.LogfVerbose("syst: replying with system type Unix")
 	f.reply(NameSystemTypeReply)
 }
 
