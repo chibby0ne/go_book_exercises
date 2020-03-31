@@ -482,7 +482,6 @@ func NewFTPConnection(conn net.Conn) *FtpConnection {
 	ftpConnection := FtpConnection{
 		ControlConnnection: conn,
 		ControlPort:        *flag.Port,
-		DataPort:           *flag.DataPort,
 	}
 	return &ftpConnection
 }
@@ -500,20 +499,7 @@ func ServeFTP(listener net.Listener) {
 }
 
 func (f *FtpConnection) openDataConnection() (net.Conn, error) {
-	localAddress, err := net.ResolveTCPAddr("tcp4", fmt.Sprintf(":%d", f.DataPort))
-	if err != nil {
-		log.LogfVerbose("could not resolve local tcp address: %s", err)
-		f.reply(CannotOpenDataConnectionReply)
-		return nil, fmt.Errorf("could not resolve local tcp address: %s", err)
-	}
-	remoteAddress, err := net.ResolveTCPAddr("tcp4", fmt.Sprintf("%s:%s", f.DataHostClient, f.DataPortClient))
-	if err != nil {
-		log.LogfVerbose("could not resolve remote tcp address: %s", err)
-		f.reply(CannotOpenDataConnectionReply)
-		return nil, fmt.Errorf("could not resolve remote tcp address: %s", err)
-
-	}
-	conn, err := net.DialTCP("tcp4", localAddress, remoteAddress)
+	conn, err := net.Dial("tcp4", fmt.Sprintf("%s:%s", f.DataHostClient, f.DataPortClient))
 	if err != nil {
 		log.Fatalf("could not establish connection: %s", err)
 		f.reply(CannotOpenDataConnectionReply)
