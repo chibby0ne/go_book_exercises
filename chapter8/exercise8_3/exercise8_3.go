@@ -15,9 +15,12 @@ import (
 )
 
 func mustCopy(dst io.Writer, src io.Reader) {
-	if _, err := io.Copy(dst, src); err != nil {
+	var n int64
+	var err error
+	if n, err = io.Copy(dst, src); err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("bytes copied: %v", n)
 }
 
 func main() {
@@ -32,10 +35,9 @@ func main() {
 		done <- struct{}{}
 	}()
 	mustCopy(conn, os.Stdin)
-	connWriterCloser, ok := conn.(io.WriteCloser)
-	if !ok {
-		log.Fatal(err)
+	if conn, ok := conn.(*net.TCPConn); ok {
+		conn.CloseWrite()
 	}
-	connWriterCloser.Close()
+	log.Print("closed conn writer closer. waiting for echoes to finish...")
 	<-done
 }
