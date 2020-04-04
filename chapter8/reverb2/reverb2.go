@@ -37,6 +37,6 @@ func main() {
 			log.Fatal(err)
 			continue
 		}
-		handleConn(conn)
+		go handleConn(conn)
 	}
 }
