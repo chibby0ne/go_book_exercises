@@ -19,10 +19,8 @@ func crawl(url string) []string {
 func main() {
 	worklist := make(chan []string)  // list of URLs, may have duplicates
 	unseenLinks := make(chan string) // de-duplicated URLs
-	var n int                        // number of pending sends to worklist
 
 	// Start with the command-line arguments
-	n++
 	go func() { worklist <- os.Args[1:] }()
 
 	// Create 20 crawler goroutines to fetch each unseen link.
@@ -46,12 +44,10 @@ func main() {
 	// The main goroutine de-duplicates worklist items and sends the unseen
 	// ones to the crawlers
 	seen := make(map[string]bool)
-	for ; n > 0; n-- {
-		list := <-worklist
+	for list := range worklist {
 		for _, link := range list {
 			if !seen[link] {
 				seen[link] = true
-				n++
 				unseenLinks <- link
 			}
 		}
