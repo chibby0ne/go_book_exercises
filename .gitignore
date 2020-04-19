@@ -235,3 +235,15 @@ chapter9/exercise9_3/exercise9_3
 chapter9/exercise9_4/exercise9_4
 chapter9/exercise9_5/exercise9_5
 chapter9/exercise9_6/exercise9_6
+
+
+chapter10/exercise10_1/exercise10_1
+chapter10/exercise10_1/mandelbrot
+chapter10/exercise10_1/*.png
+chapter10/exercise10_1/*.jpg
+chapter10/exercise10_1/*.gif
+chapter10/jpeg/jpeg
+chapter10/jpeg/mandelbrot
+chapter10/jpeg/*.png
+chapter10/jpeg/*.gif
+chapter10/jpeg/*.jpg
