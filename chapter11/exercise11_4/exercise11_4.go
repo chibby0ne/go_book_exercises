@@ -1,6 +1,4 @@
-// TestRandomPalindrome only tests palindromes. Write a randomized test that
-// generates and verifies non-palindromes
-
+// Modify randomPalindrome to exercise IsPalindrome's handling of punctuation and spaces.
 package word
 
 import (
