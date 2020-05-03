@@ -7,7 +7,7 @@ import (
 // IsPalindrome reports whether s reads the same forward and backward.
 // Letter case is ignored, as are non-letters.
 func IsPalindrome(s string) bool {
-	var letters []rune
+	letters := make([]rune, 0, len(s)) // less allocations, faster benchmark
 	for _, r := range s {
 		if unicode.IsLetter(r) {
 			letters = append(letters, unicode.ToLower(r))
