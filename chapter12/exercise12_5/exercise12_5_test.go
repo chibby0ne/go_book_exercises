@@ -150,25 +150,3 @@ func equalComplex(a, b *complex128) bool {
 	}
 	return true
 }
-
-// func TestMarshalUnmarshalComplex(t *testing.T) {
-// 	compl := complex(float64(64), float64(-64))
-// 	goldenOutput, err := json.MarshalIndent(compl, "", "  ")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	output, err := exercise12_5.MarshalIndent(compl, "", "  ")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	var c, d complex128
-// 	if err := json.Unmarshal(output, &c); err != nil {
-// 		t.Error(err)
-// 	}
-// 	if err := json.Unmarshal(goldenOutput, &d); err != nil {
-// 		t.Error(err)
-// 	}
-// 	if !equalComplex(&compl, &c) {
-// 		t.Errorf("got: %v, want: %v\n should have gotten: %v, should want: %v", string(output), c, string(goldenOutput), d)
-// 	}
-// }

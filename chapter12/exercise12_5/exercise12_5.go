@@ -1,12 +1,9 @@
-// Modify encode to pretty-print the S-expression in the style shown above
+// Adapt encode to emit JSON instead of S-expressions. Test your encoder using the standard decoder, json.Unmarshal
 package exercise12_5
 
 import (
 	"bytes"
-	// "strconv"
-	// "encoding/json"
 	"fmt"
-	// "math"
 	"reflect"
 )
 
@@ -55,11 +52,6 @@ func encode(buf *bytes.Buffer, v reflect.Value, prefix, indent, currentIndent st
 			// Struct's field name
 			fmt.Fprintf(buf, "%s%s%q: ", prefix, currentIndent, v.Type().Field(i).Name)
 			// Struct's field value.
-			// For the special case of arrays/slices that add the currentIndent before
-			// the "[" for the case when they are nested
-			// if v.Field(i).Kind() == reflect.Array || v.Field(i).Kind() == reflect.Slice {
-			// 	newindent = indent
-			// }
 			if notCompositeType(v.Field(i).Kind()) {
 				newindent = ""
 			}
@@ -95,24 +87,7 @@ func encode(buf *bytes.Buffer, v reflect.Value, prefix, indent, currentIndent st
 		fmt.Fprintf(buf, "%v", v.Bool())
 	case reflect.Float32, reflect.Float64:
 		fmt.Fprintf(buf, "%f", v.Float())
-	// case reflect.Complex64, reflect.Complex128:
-	// 	comp := v.Complex()
-	// 	r, i := real(comp), imag(comp)
-	// 	r_f := strconv.FormatFloat(r, 'f', -1, 64)
-	// 	i_f := strconv.FormatFloat(math.Abs(i), 'f', -1, 64)
-	// 	var sign rune = '+'
-	// 	if i < 0 {
-	// 		sign = '-'
-	// 	}
-	// 	fmt.Fprintf(buf, "(%s%c%si)", r_f, sign, i_f)
-	// case reflect.Interface:
-	// 	buf.WriteByte('{')
-	// 	fmt.Fprintf(buf, "%q ", v.Type())
-	// 	if err := encode(buf, v.Elem(), prefix, indent, currentIndent); err != nil {
-	// 		return err
-	// 	}
-	// 	buf.WriteByte('}')
-	default: // chan, func
+	default: // chan, func, complex, interface
 		return fmt.Errorf("unsupported type: %s", v.Type())
 	}
 	return nil
