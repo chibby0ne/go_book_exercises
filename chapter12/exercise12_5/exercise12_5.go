@@ -18,7 +18,7 @@ func notCompositeType(k reflect.Kind) bool {
 	}
 }
 
-func encode(buf *bytes.Buffer, v reflect.Value, prefix, indent, currentIndent string) error {
+func encode(buf *bytes.Buffer, v reflect.Value, prefix, indent, currentIndent string, parentIsComposite bool) error {
 	switch v.Kind() {
 	case reflect.Invalid:
 		fmt.Fprintf(buf, "%s%s%v", prefix, currentIndent, "null")
@@ -29,13 +29,17 @@ func encode(buf *bytes.Buffer, v reflect.Value, prefix, indent, currentIndent st
 	case reflect.String:
 		fmt.Fprintf(buf, "%s%s%q", prefix, currentIndent, v.String())
 	case reflect.Ptr:
-		return encode(buf, v.Elem(), prefix, indent, currentIndent)
+		return encode(buf, v.Elem(), prefix, indent, currentIndent, parentIsComposite)
 	case reflect.Array, reflect.Slice:
-		fmt.Fprintf(buf, "%s[", currentIndent)
-		newindent := currentIndent + indent
+		newCurrentIndent := currentIndent + indent
+		if parentIsComposite {
+			fmt.Fprintf(buf, "[")
+		} else {
+			fmt.Fprintf(buf, "%s[", currentIndent)
+		}
 		for i := 0; i < v.Len(); i++ {
 			fmt.Fprintf(buf, "\n")
-			if err := encode(buf, v.Index(i), prefix, newindent, newindent); err != nil {
+			if err := encode(buf, v.Index(i), prefix, indent, newCurrentIndent, false); err != nil {
 				return err
 			}
 			if i+1 < v.Len() {
@@ -45,44 +49,55 @@ func encode(buf *bytes.Buffer, v reflect.Value, prefix, indent, currentIndent st
 		fmt.Fprintf(buf, "\n%s]", currentIndent)
 	case reflect.Struct:
 		fmt.Fprintf(buf, "{")
-		currentIndent += indent
-		newindent := currentIndent
+		newCurrentIndent := currentIndent + indent
+
 		for i := 0; i < v.NumField(); i++ {
 			fmt.Fprintf(buf, "\n")
 			// Struct's field name
-			fmt.Fprintf(buf, "%s%s%q: ", prefix, currentIndent, v.Type().Field(i).Name)
+			fmt.Fprintf(buf, "%s%s%q: ", prefix, newCurrentIndent, v.Type().Field(i).Name)
 			// Struct's field value.
 			if notCompositeType(v.Field(i).Kind()) {
-				newindent = ""
+				newCurrentIndent = ""
 			}
-			if err := encode(buf, v.Field(i), prefix, indent, newindent); err != nil {
+			if err := encode(buf, v.Field(i), prefix, indent, newCurrentIndent, true); err != nil {
 				return err
 			}
 			if i+1 < v.NumField() {
 				fmt.Fprintf(buf, ",")
 			}
-			newindent = currentIndent
+			newCurrentIndent = currentIndent + indent
 		}
-		fmt.Fprintf(buf, "\n}")
+		fmt.Fprintf(buf, "\n%s}", currentIndent)
+
 	case reflect.Map:
-		fmt.Fprintf(buf, "{")
-		newindent := currentIndent + indent
+		if parentIsComposite {
+			fmt.Fprintf(buf, "{")
+		} else {
+			fmt.Fprintf(buf, "%s{", currentIndent)
+		}
+		newCurrentIndent := currentIndent + indent
 		for i, key := range v.MapKeys() {
 			fmt.Fprintf(buf, "\n")
 			// Write the key
-			if err := encode(buf, key, prefix, newindent, newindent); err != nil {
+			if err := encode(buf, key, prefix, indent, newCurrentIndent, parentIsComposite); err != nil {
 				return err
 			}
 			fmt.Fprintf(buf, ": ")
+			if notCompositeType(v.MapIndex(key).Kind()) {
+				newCurrentIndent = ""
+			}
 			// Write the value
-			if err := encode(buf, v.MapIndex(key), prefix, newindent, ""); err != nil {
+			if err := encode(buf, v.MapIndex(key), prefix, indent, newCurrentIndent, true); err != nil {
 				return err
 			}
 			if i+1 < len(v.MapKeys()) {
 				fmt.Fprintf(buf, ",")
 			}
+			// restore newCurrentIndent in case the Value asociated with the key was not CompositeType
+			newCurrentIndent = currentIndent + indent
 		}
 		fmt.Fprintf(buf, "\n%s}", currentIndent)
+
 	case reflect.Bool:
 		fmt.Fprintf(buf, "%v", v.Bool())
 	case reflect.Float32, reflect.Float64:
@@ -95,7 +110,7 @@ func encode(buf *bytes.Buffer, v reflect.Value, prefix, indent, currentIndent st
 
 func Marshal(v interface{}) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := encode(&buf, reflect.ValueOf(v), "", "", ""); err != nil {
+	if err := encode(&buf, reflect.ValueOf(v), "", "", "", false); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -103,7 +118,7 @@ func Marshal(v interface{}) ([]byte, error) {
 
 func MarshalIndent(v interface{}, prefix, indent string) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := encode(&buf, reflect.ValueOf(v), prefix, indent, ""); err != nil {
+	if err := encode(&buf, reflect.ValueOf(v), prefix, indent, "", false); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

@@ -150,3 +150,30 @@ func equalComplex(a, b *complex128) bool {
 	}
 	return true
 }
+
+type Person struct {
+	name string
+	car  Car
+}
+
+type Car struct {
+	model string
+	brand string
+	year  int
+}
+
+func TestPrettyPrintNestedStruct(t *testing.T) {
+	someone := Person{
+		name: "joe",
+		car: Car{
+			model: "model s",
+			brand: "tesla",
+			year:  2019,
+		},
+	}
+	output, err := exercise12_5.MarshalIndent(someone, "", "  ")
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(string(output))
+}
