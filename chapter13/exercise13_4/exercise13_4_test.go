@@ -7,7 +7,10 @@ import (
 	"testing"
 )
 
-const DataToCompress = "asdfasdf"
+const (
+	DataToCompress = "asdfasdf"
+	Iterations     = 1e4
+)
 
 func TestWriter(t *testing.T) {
 	compressed, originalUncompressed := &bytes.Buffer{}, &bytes.Buffer{}
@@ -16,7 +19,8 @@ func TestWriter(t *testing.T) {
 		t.Errorf("error creating newWriter: %v", err)
 	}
 
-	for i := 0; i < 1e4; i++ {
+	// Write the same thing to an original uncompressed buffer and a buffer that is to be compressed
+	for i := 0; i < Iterations; i++ {
 		writer.Write([]byte(DataToCompress))
 		originalUncompressed.Write([]byte(DataToCompress))
 	}
@@ -36,7 +40,7 @@ func TestWriter(t *testing.T) {
 	}
 
 	if !bytes.Equal(uncompressed.Bytes(), originalUncompressed.Bytes()) {
-		t.Errorf("value uncompressed is not equal to the original value uncomprossed")
+		t.Errorf("bytes uncompressed after being compressed are not equal to the original bytes uncompressed")
 	}
 
 }
