@@ -16,4 +16,4 @@ quite right.
 
 ## License 
 
-MIT 
+[MIT](https://github.com/chibby0ne/go_book_exercises/blob/master/LICENSE)
