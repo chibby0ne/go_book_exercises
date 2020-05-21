@@ -33,8 +33,8 @@ func writeBzip(wg *sync.WaitGroup, ch chan int, writer io.WriteCloser, t *testin
 }
 
 const (
-	MaxSizeChannel int = 50
-	NumRoutines    int = 3
+	MaxSizeChannel int = 500
+	NumRoutines    int = 10
 )
 
 func TestConcurrentUse(t *testing.T) {
@@ -78,7 +78,7 @@ func TestConcurrentUse(t *testing.T) {
 	// report which numbers were not written
 	for i := 0; i < MaxSizeChannel; i++ {
 		if !numbers[i] {
-			t.Errorf("Missing number: %v", i)
+			t.Errorf("Number was not written/compressed by the goroutines: %v", i)
 		}
 	}
 
